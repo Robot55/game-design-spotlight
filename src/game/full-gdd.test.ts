@@ -92,6 +92,10 @@ describe("Full GDD rules", () => {
   it("Stone Brute moves on cooldown turns but only attacks every other turn", () => {
     let s = arena(); enemy(s, "brute", 12, 10); s = end(s); expect(s.enemies[0]?.x).toBe(11); expect(s.hp).toBe(100); s = end(s); expect(s.hp).toBe(94); s = end(s); expect(s.hp).toBe(94);
   });
+  it("Archer movement never exceeds its 1-tile budget including retreat", () => {
+    let s = arena(); enemy(s, "archer", 14, 10); s = end(s); expect(s.enemies[0]?.x).toBe(13); expect(s.hp).toBe(98);
+    s = arena(); enemy(s, "archer", 11, 10); s = end(s); expect(s.enemies[0]?.x).toBe(12); expect(s.hp).toBe(98);
+  });
   it("uses the exact Skeleton, Archer, Brute and Ghost attributes from the GDD", () => {
     expect([ENEMIES.skeleton.hp, ENEMIES.skeleton.damage, ENEMIES.skeleton.movement, ENEMIES.skeleton.range, ENEMIES.skeleton.interval]).toEqual([8, 3, 1, 1, 1]);
     expect([ENEMIES.archer.hp, ENEMIES.archer.damage, ENEMIES.archer.movement, ENEMIES.archer.range, ENEMIES.archer.interval]).toEqual([6, 2, 1, 3, 1]);

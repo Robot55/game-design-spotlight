@@ -168,7 +168,7 @@ export function canTarget(s: GameState, id: CardId, p: Point): boolean {
   if (c.target === "self") return true;
   if (!tileAt(s, p) || !visible(s, p) || distance(s.player, p) > (c.range ?? 1) || !lineOfSight(s, s.player, p)) return false;
   if (c.id === "bridge" || c.id === "ice") return tileAt(s, p)?.kind === "water";
-  if (id === "lunge" && distance(s.player, p) > 1) return adjacent(s.player).some(a => distance(a, p) === 1 && walkable(s, a) && !s.enemies.some(e => distance(e, a) === 0));
+  if (id === "lunge" && distance(s.player, p) > 1) return s.enemies.some(e => distance(e, p) === 0) && adjacent(s.player).some(a => distance(a, p) === 1 && walkable(s, a) && !s.enemies.some(e => distance(e, a) === 0));
   if (id === "heavy" && tileAt(s, p)?.kind === "rubble") return true;
   if (c.target === "enemy") return s.enemies.some(e => distance(e, p) === 0);
   return !["wall", "pillar", "door"].includes(tileAt(s, p)?.kind ?? "wall");
@@ -282,16 +282,17 @@ function enemiesAct(s: GameState) {
     {
       const inRange = () => distance(s.player, e) <= def.range && (e.kind === "ghost" || lineOfSight(s, e, s.player));
       const ready = s.turn % def.interval === 0;
+      let moved = 0;
       if (!inRange()) {
         const mp = e.root ? 0 : Math.max(0, def.movement - (e.slow ? 1 : 0));
         const path: Point[] = [];
         const astar = new AStar(s.player.x, s.player.y, (x, y) => (e.kind === "ghost" ? !!tileAt(s, { x, y }) : walkable(s, { x, y })) && !s.enemies.some(v => v.id !== e.id && v.x === x && v.y === y), { topology: 4 });
         astar.compute(e.x, e.y, (x, y) => path.push({ x, y }));
-        for (const p of path.slice(1, mp + 1)) { if (distance(p, s.player) === 0 || inRange()) break; e.x = p.x; e.y = p.y; }
+        for (const p of path.slice(1, mp + 1)) { if (distance(p, s.player) === 0 || inRange()) break; e.x = p.x; e.y = p.y; moved++; }
       }
       if (inRange() && ready) hurt(s, def.damage, def.name);
       if (e.kind === "archer" && distance(s.player, e) < 3 && !e.root) {
-        for (let i = 0; i < Math.max(0, def.movement - e.slow); i++) {
+        for (let i = 0; i < Math.max(0, def.movement - e.slow - moved); i++) {
           const retreat = adjacent(e).filter(p => walkable(s, p) && distance(p, s.player) > distance(e, s.player) && !s.enemies.some(v => v.id !== e.id && distance(v, p) === 0)).sort((a, b) => distance(b, s.player) - distance(a, s.player))[0];
           if (retreat) { e.x = retreat.x; e.y = retreat.y; }
         }
