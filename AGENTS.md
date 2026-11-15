@@ -35,3 +35,6 @@ use the editor.
 - Use ROT.js for seeded dungeon generation and pathfinding; preserve its RNG state around each generation to keep runs reproducible.
 - Keep prototype runs in memory without accounts or saved progress; persistence is outside the current playtest scope.
 - Expose only read-only live game state on `window.__deepdraw` in development, so browser checks observe real UI actions without mutating gameplay.
+- Store mechanical multi-tags separately from a card's combo category; damage modifiers and immunities use the tags while follow-ups use the category, so multi-tag spells do not accidentally break the combo rules.
+- Verify generated challenge-solution floors before returning them, using blocked-water and counter-enabled reachability passes; failed candidates are regenerated while ROT.js RNG restoration stays in a finally block.
+- Keep loot offers in a seeded cycling pool and place required counter-cards as literal tile loot, so the entire catalogue is offered and critical solutions never depend on reward luck.
