@@ -89,6 +89,45 @@ describe("Documented core rules", () => {
   it("3 floors make a complete run, and restart resets run state", () => {
     let s = arena(); s.floor = 3; const t = s.tiles[10 * s.width + 11]; if (!t) throw Error("tile missing"); t.kind = "stairs"; s = reduceGame(s, { type: "move", dx: 1, dy: 0 }); expect(s.phase).toBe("won"); s = reduceGame(s, { type: "restart", seed: 552 }); expect(s.floor).toBe(1); expect(s.hp).toBe(30); expect(s.kills).toBe(0); expect(s.seed).toBe(552);
   });
+  it("Spark applies 1 burn damage for exactly 2 turns", () => {
+    let s = arena(); s.enemies = [enemy("slime", 12, 10)]; s = play(s, "spark", 12, 10); expect(s.enemies[0]?.hp).toBe(10); expect(s.enemies[0]?.burn).toBe(2);
+    s = reduceGame(reduceGame(s, { type: "end" }), { type: "enemies" }); expect(s.enemies[0]?.hp).toBe(9); expect(s.enemies[0]?.burn).toBe(1);
+    s = reduceGame(reduceGame(s, { type: "end" }), { type: "enemies" }); expect(s.enemies[0]?.hp).toBe(8); expect(s.enemies[0]?.burn).toBe(0);
+    s = reduceGame(reduceGame(s, { type: "end" }), { type: "enemies" }); expect(s.enemies[0]?.hp).toBe(8);
+  });
+  it("Frost Shard reduces next movement by 1 tile", () => {
+    let s = arena(); s.enemies = [enemy("skeleton", 13, 10)]; s = play(s, "frost", 13, 10); expect(s.enemies[0]?.slow).toBe(1);
+    s = reduceGame(reduceGame(s, { type: "end" }), { type: "enemies" }); expect(s.enemies[0]?.x).toBe(12); expect(s.enemies[0]?.slow).toBe(0);
+  });
+  it("Pinning Shot prevents all movement next turn", () => {
+    let s = arena(); s.enemies = [enemy("skeleton", 14, 10)]; s = play(s, "pinning", 14, 10);
+    s = reduceGame(reduceGame(s, { type: "end" }), { type: "enemies" }); expect(s.enemies[0]?.x).toBe(14); expect(s.enemies[0]?.root).toBe(0);
+  });
+  it("Adrenaline adds exactly 2 AP and is exhausted", () => {
+    let s = arena(); s = play(s, "adrenaline"); expect(s.ap).toBe(5); expect(s.exhausted.some(c => c.id === "adrenaline")).toBe(true);
+  });
+  it("Dexterity raises the AP pool by 1 per skill point", () => {
+    let s = arena(); s.skillPoints = 1; s = reduceGame(s, { type: "skill", skill: "dexterity" }); expect(s.maxAp).toBe(4); expect(s.ap).toBe(4); expect(s.skillPoints).toBe(0);
+    const again = reduceGame(s, { type: "skill", skill: "dexterity" }); expect(again.maxAp).toBe(4);
+  });
+  it("Toughness adds exactly 6 max HP and healing", () => {
+    let s = arena(); s.skillPoints = 1; s.hp = 12; s = reduceGame(s, { type: "skill", skill: "toughness" }); expect(s.maxHp).toBe(36); expect(s.hp).toBe(18);
+  });
+  it("Strength adds 1 melee damage and Wisdom adds 1 spell damage", () => {
+    let s = arena(); s.skillPoints = 2; s = reduceGame(s, { type: "skill", skill: "strength" }); s = reduceGame(s, { type: "skill", skill: "wisdom" }); expect(effectiveDamage(s, "sword", enemy("slime"))).toBe(4); expect(effectiveDamage(s, "spark", enemy("slime"))).toBe(3);
+  });
+  it("chests cost 1 AP and the chosen reward joins the discard and deck", () => {
+    let s = arena(); const t = s.tiles[10 * s.width + 11]; if (!t) throw Error("tile missing"); t.kind = "chest";
+    s = reduceGame(s, { type: "move", dx: 1, dy: 0 }); expect(s.ap).toBe(2); expect(s.chests).toBe(1); expect(s.rewards).toHaveLength(3);
+    const id = s.rewards[0]; if (!id) throw Error("reward missing"); s = reduceGame(s, { type: "reward", id }); expect(s.deck).toHaveLength(13); expect(s.discard.at(-1)?.id).toBe(id); expect(s.rewards).toHaveLength(0);
+  });
+  it("a pinned card is guaranteed in the next floor’s opening hand", () => {
+    let s = arena(); s.deckEdits = 1; const c = s.deck.find(c => c.id === "heavy"); if (!c) throw Error("card missing"); s = reduceGame(s, { type: "pin", uid: c.uid }); expect(s.deckEdits).toBe(0);
+    const t = s.tiles[10 * s.width + 11]; if (!t) throw Error("tile missing"); t.kind = "stairs"; s.hp = 12; s = reduceGame(s, { type: "move", dx: 1, dy: 0 }); expect(s.floor).toBe(2); expect(s.hand.some(v => v.uid === c.uid)).toBe(true); expect(s.hp).toBe(18);
+  });
+  it("removing a card costs one deck edit and removes it from every active pile", () => {
+    let s = arena(); s.deckEdits = 1; const c = s.hand.find(c => c.id === "pommel"); if (!c) throw Error("card missing"); s = reduceGame(s, { type: "remove", uid: c.uid }); expect(s.deckEdits).toBe(0); expect(s.deck).toHaveLength(11); expect([...s.hand, ...s.draw, ...s.discard].some(v => v.uid === c.uid)).toBe(false);
+  });
 });
 describe("Random dungeon solvability", () => {
   for (const seed of [1, 78241, 124, 500, 9012]) it(`connects stairs and offers magic solutions for seed ${seed}`, () => {
