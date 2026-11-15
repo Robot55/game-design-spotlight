@@ -43,7 +43,7 @@ export function DungeonBoard({ game, dispatch, onInspect }: { game: GameState; d
         const p = { x: x + left, y: y + top }, t = tileAt(s, p);
         if (!t?.seen) continue;
         const px = ox + x * size, py = oy + y * size;
-        const index = atlasIndex(t); const image = images.tiles;
+        const index = atlasIndex(t); const image = images["tiles"];
         if (image?.complete && image.naturalWidth) ctx.drawImage(image, index % 8 * 64, Math.floor(index / 8) * 64, 64, 64, px, py, size, size);
         const isVisible = visible(s, p);
         if (!isVisible) { ctx.fillStyle = palette.fog; ctx.fillRect(px, py, size, size); }

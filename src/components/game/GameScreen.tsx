@@ -27,7 +27,7 @@ export default function GameScreen() {
 }
 function RunView({ game, dispatch, panel, setPanel, inspected, setInspected, runNumber, restart }: {
   game: ReturnType<typeof createGame>; dispatch: React.Dispatch<Parameters<typeof reduceGame>[1]>;
-  panel: Panel; setPanel: (panel: Panel) => void; inspected?: number; setInspected: (id: number) => void;
+  panel: Panel; setPanel: (panel: Panel) => void; inspected?: number | undefined; setInspected: (id: number) => void;
   runNumber: number; restart: () => void;
 }) {
   const rewardOpen = game.rewards.length > 0 && game.phase !== "dead" && game.phase !== "won";

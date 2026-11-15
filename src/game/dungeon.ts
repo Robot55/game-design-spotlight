@@ -37,7 +37,7 @@ export function generateDungeon(seed: number, floor: number) {
     const choices = available.filter(t => distance(t, player) >= minimum && !occupied.has(`${t.x},${t.y}`));
     const p = RNG.getItem(choices);
     if (p) reserve(p);
-    return p;
+    return p ?? undefined;
   };
   const farthest = [...available].sort((a, b) => distance(b, player) - distance(a, player))[0];
   if (farthest) { farthest.kind = "stairs"; reserve(farthest); }

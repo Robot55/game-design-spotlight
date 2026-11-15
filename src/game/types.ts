@@ -12,10 +12,10 @@ export interface GameState {
   seed: number; floor: number; width: number; height: number; tiles: Tile[]; enemies: Enemy[];
   player: Point; hp: number; maxHp: number; ap: number; maxAp: number; block: number;
   xp: number; level: number; skillPoints: number; skills: Record<Skill, number>; deckEdits: number;
-  pinned?: number; turn: number; phase: "player" | "enemy" | "dead" | "won";
+  pinned?: number | undefined; turn: number; phase: "player" | "enemy" | "dead" | "won";
   hand: CardInstance[]; draw: CardInstance[]; discard: CardInstance[]; exhausted: CardInstance[];
-  deck: CardInstance[]; nextUid: number; lastTag?: CardTag; lastSpell?: { id: CardId; target: Point };
-  lastTarget?: Point; cardsPlayed: number; enchanted: boolean; selected?: number;
+  deck: CardInstance[]; nextUid: number; lastTag?: CardTag | undefined; lastSpell?: { id: CardId; target: Point } | undefined;
+  lastTarget?: Point | undefined; cardsPlayed: number; enchanted: boolean; selected?: number | undefined;
   rewards: CardId[]; pendingRewards: number; pendingScry: number[];
   kills: number; chests: number; log: LogEntry[]; notice: string;
 }

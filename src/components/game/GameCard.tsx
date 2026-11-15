@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import illustrations from "@/assets/card-illustrations.jpg";
 
 export function GameCard({ id, selected, reason, onClick, compact = false }: {
-  id: CardId; selected?: boolean; reason?: string; onClick?: () => void; compact?: boolean;
+  id: CardId; selected?: boolean; reason?: string | undefined; onClick?: () => void; compact?: boolean;
 }) {
   const c = CARDS[id];
   const Icon = c.tag === "Melee" ? Sword : c.tag === "Ranged" ? ArrowUpRight : c.element === "Cold" ? Snowflake : c.tag === "Spell" ? Flame : Shield;
