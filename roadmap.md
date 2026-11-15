@@ -10,4 +10,4 @@
 - [x] Include the full designed card catalogue and enemy roster, including the Stone Brute.
 - [x] Generate required water challenges with accessible counter-cards and verified paths.
 - [x] Update depth/occlusion rendering, hand feedback, pile inspection, and HUD.
-- [ ] Test the updated rules and play a full run through the real controls.
+- [x] Test the updated rules and play a full run through the real controls (69 passing tests; reached floor 3 and defeat; phone/tablet pile and enemy controls verified).
