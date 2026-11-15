@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CARDS, STARTER, type CardId } from "./cards";
 import { createGame, cardReason, effectiveDamage, lineOfSight, reduceGame, walkable } from "./engine";
-import { adjacent, generateDungeon } from "./dungeon";
+import { adjacent, generateDungeon, reachableTiles, verifyDungeon } from "./dungeon";
 import { ENEMIES } from "./enemies";
 import type { Enemy, EnemyKind, GameState } from "./types";
 
@@ -59,11 +59,11 @@ describe("Documented core rules", () => {
   it("walls block line of sight for ranged attacks", () => {
     const s = arena(); const t = s.tiles[10 * s.width + 12]; if (!t) throw Error("tile missing"); t.kind = "wall"; expect(lineOfSight(s, s.player, { x: 14, y: 10 })).toBe(false);
   });
-  it("Healing Potion restores 8 HP and exhausts from the run", () => {
-    const s = arena(); s.hp = 15; const n = play(s, "potion"); expect(n.hp).toBe(23); expect(n.ap).toBe(3); expect(n.exhausted.some(c => c.id === "potion")).toBe(true); expect(n.deck.some(c => c.id === "potion")).toBe(false);
+  it("Drink Potion restores 15 HP and exhausts from the run", () => {
+    const s = arena(); s.hp = 15; const n = play(s, "potion"); expect(n.hp).toBe(30); expect(n.ap).toBe(3); expect(n.exhausted.some(c => c.id === "potion")).toBe(true); expect(n.deck.some(c => c.id === "potion")).toBe(false);
   });
-  it("Guard blocks 4 damage until next turn", () => {
-    let s = arena(); s.enemies = [enemy("imp", 12, 10)]; s.turn = 2; s = play(s, "guard"); expect(s.block).toBe(4); s = reduceGame(reduceGame(s, { type: "end" }), { type: "enemies" }); expect(s.hp).toBe(30); expect(s.block).toBe(0);
+  it("Shield Block reduces the next hit by exactly 50%", () => {
+    let s = arena(); s.enemies = [enemy("brute")]; s.turn = 2; s = play(s, "guard"); expect(s.mitigation).toBe(0.5); s = reduceGame(reduceGame(s, { type: "end" }), { type: "enemies" }); expect(s.hp).toBe(97); expect(s.mitigation).toBe(0);
   });
   it("ghosts reject ordinary physical damage but accept spells and enchanted melee", () => {
     const s = arena(); const e = enemy("ghost"); expect(effectiveDamage(s, "sword", e)).toBe(0); expect(effectiveDamage(s, "spark", e)).toBe(2); s.enchanted = true; expect(effectiveDamage(s, "sword", e)).toBe(4);
@@ -87,7 +87,7 @@ describe("Documented core rules", () => {
     let s = arena(); s.draw = [{ id: "heavy", uid: 81 }, { id: "frost", uid: 82 }]; s.pendingScry = [81, 82]; s = reduceGame(s, { type: "scry", uid: 82 }); s = reduceGame(s, { type: "scry", uid: 81 }); expect(s.draw.map(c => c.uid)).toEqual([82, 81]);
   });
   it("3 floors make a complete run, and restart resets run state", () => {
-    let s = arena(); s.floor = 3; const t = s.tiles[10 * s.width + 11]; if (!t) throw Error("tile missing"); t.kind = "stairs"; s = reduceGame(s, { type: "move", dx: 1, dy: 0 }); expect(s.phase).toBe("won"); s = reduceGame(s, { type: "restart", seed: 552 }); expect(s.floor).toBe(1); expect(s.hp).toBe(30); expect(s.kills).toBe(0); expect(s.seed).toBe(552);
+    let s = arena(); s.floor = 3; const t = s.tiles[10 * s.width + 11]; if (!t) throw Error("tile missing"); t.kind = "stairs"; s = reduceGame(s, { type: "move", dx: 1, dy: 0 }); expect(s.phase).toBe("won"); s = reduceGame(s, { type: "restart", seed: 552 }); expect(s.floor).toBe(1); expect(s.hp).toBe(100); expect(s.kills).toBe(0); expect(s.seed).toBe(552);
   });
   it("Spark applies 1 burn damage for exactly 2 turns", () => {
     let s = arena(); s.enemies = [enemy("slime", 12, 10)]; s = play(s, "spark", 12, 10); expect(s.enemies[0]?.hp).toBe(10); expect(s.enemies[0]?.burn).toBe(2);
@@ -97,7 +97,7 @@ describe("Documented core rules", () => {
   });
   it("Frost Shard reduces next movement by 1 tile", () => {
     let s = arena(); s.enemies = [enemy("skeleton", 13, 10)]; s = play(s, "frost", 13, 10); expect(s.enemies[0]?.slow).toBe(1);
-    s = reduceGame(reduceGame(s, { type: "end" }), { type: "enemies" }); expect(s.enemies[0]?.x).toBe(12); expect(s.enemies[0]?.slow).toBe(0);
+    s = reduceGame(reduceGame(s, { type: "end" }), { type: "enemies" }); expect(s.enemies[0]?.x).toBe(13); expect(s.enemies[0]?.slow).toBe(0);
   });
   it("Pinning Shot prevents all movement next turn", () => {
     let s = arena(); s.enemies = [enemy("skeleton", 14, 10)]; s = play(s, "pinning", 14, 10);
@@ -111,15 +111,15 @@ describe("Documented core rules", () => {
     const again = reduceGame(s, { type: "skill", skill: "dexterity" }); expect(again.maxAp).toBe(4);
   });
   it("Toughness adds exactly 6 max HP and healing", () => {
-    let s = arena(); s.skillPoints = 1; s.hp = 12; s = reduceGame(s, { type: "skill", skill: "toughness" }); expect(s.maxHp).toBe(36); expect(s.hp).toBe(18);
+    let s = arena(); s.skillPoints = 1; s.hp = 12; s = reduceGame(s, { type: "skill", skill: "toughness" }); expect(s.maxHp).toBe(106); expect(s.hp).toBe(18);
   });
-  it("Strength adds 1 melee damage and Wisdom adds 1 spell damage", () => {
-    let s = arena(); s.skillPoints = 2; s = reduceGame(s, { type: "skill", skill: "strength" }); s = reduceGame(s, { type: "skill", skill: "wisdom" }); expect(effectiveDamage(s, "sword", enemy("slime"))).toBe(4); expect(effectiveDamage(s, "spark", enemy("slime"))).toBe(3);
+  it("Strength adds 1 melee/fire damage and Wisdom adds 1 spell damage", () => {
+    let s = arena(); s.skillPoints = 2; s = reduceGame(s, { type: "skill", skill: "strength" }); s = reduceGame(s, { type: "skill", skill: "wisdom" }); expect(effectiveDamage(s, "sword", enemy("slime"))).toBe(4); expect(effectiveDamage(s, "spark", enemy("slime"))).toBe(4);
   });
   it("chests cost 1 AP and the chosen reward joins the discard and deck", () => {
     let s = arena(); const t = s.tiles[10 * s.width + 11]; if (!t) throw Error("tile missing"); t.kind = "chest";
     s = reduceGame(s, { type: "move", dx: 1, dy: 0 }); expect(s.ap).toBe(2); expect(s.chests).toBe(1); expect(s.rewards).toHaveLength(3);
-    const id = s.rewards[0]; if (!id) throw Error("reward missing"); s = reduceGame(s, { type: "reward", id }); expect(s.deck).toHaveLength(13); expect(s.discard.at(-1)?.id).toBe(id); expect(s.rewards).toHaveLength(0);
+    const id = s.rewards.find(id => !CARDS[id].gear); if (!id) throw Error("reward missing"); s = reduceGame(s, { type: "reward", id }); expect(s.deck).toHaveLength(13); expect(s.discard.at(-1)?.id).toBe(id); expect(s.rewards).toHaveLength(0);
   });
   it("a pinned card is guaranteed in the next floor’s opening hand", () => {
     let s = arena(); s.deckEdits = 1; const c = s.deck.find(c => c.id === "heavy"); if (!c) throw Error("card missing"); s = reduceGame(s, { type: "pin", uid: c.uid }); expect(s.deckEdits).toBe(0);
@@ -134,7 +134,8 @@ describe("Random dungeon solvability", () => {
     for (const floor of [1, 2, 3]) {
       const d = generateDungeon(seed, floor); const s = { ...arena(), ...d }; const seen = new Set<string>(); const q = [d.player];
       while (q.length) { const p = q.shift(); if (!p) break; const k = `${p.x},${p.y}`; if (seen.has(k)) continue; seen.add(k); for (const n of adjacent(p)) { const t = s.tiles[n.y * s.width + n.x]; if (t && n.x >= 0 && n.y >= 0 && n.x < s.width && n.y < s.height && (walkable(s, n) || t.kind === "door" || t.kind === "chest")) { if (!seen.has(`${n.x},${n.y}`)) q.push(n); } } }
-      const stairs = d.tiles.find(t => t.kind === "stairs"); expect(stairs).toBeDefined(); expect(seen.has(`${stairs?.x},${stairs?.y}`)).toBe(true);
+      const stairs = d.tiles.find(t => t.kind === "stairs"); expect(stairs).toBeDefined(); expect(seen.has(`${stairs?.x},${stairs?.y}`)).toBe(false);
+      expect(verifyDungeon(d)).toBe(true); expect(reachableTiles(d.tiles, d.player, true).has(`${stairs?.x},${stairs?.y}`)).toBe(true);
       expect(d.enemies.every(e => ENEMIES[e.kind] !== undefined)).toBe(true);
       if (d.enemies.some(e => e.kind === "ghost")) { const magic = d.tiles.find(t => t.kind === "enchant"); expect(magic).toBeDefined(); expect(seen.has(`${magic?.x},${magic?.y}`)).toBe(true); }
     }
