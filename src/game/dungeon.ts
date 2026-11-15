@@ -46,7 +46,7 @@ export function generateDungeon(seed: number, floor: number) {
     if (!tile) return;
     reserve(tile);
     const hp = ENEMIES[kind].hp;
-    enemies.push({ id: floor * 100 + enemies.length, kind, ...tile, hp, maxHp: hp, burn: 0, slow: 0, root: 0, awake: false });
+    enemies.push({ id: floor * 100 + enemies.length, kind, x: tile.x, y: tile.y, hp, maxHp: hp, burn: 0, slow: 0, root: 0, awake: false });
   };
   const firstRoom = rooms[0];
   const nearby = available.filter(t => firstRoom && t.x >= firstRoom.getLeft() && t.x <= firstRoom.getRight() && t.y >= firstRoom.getTop() && t.y <= firstRoom.getBottom() && t.kind === "floor").sort((a, b) => distance(a, player) - distance(b, player))[0];

@@ -23,19 +23,7 @@ export default function GameScreen() {
   const [panel, setPanel] = useState<Panel>();
   const [inspected, setInspected] = useState<number>();
   const [runNumber, setRunNumber] = useState(1);
-  const [newSeed, setNewSeed] = useState<number>();
-  const [restartKey, setRestartKey] = useState(0);
-  // Restart remounts the run, so no old hand, status, or reward can leak into a new one.
-  if (newSeed !== undefined) return <FreshRun key={restartKey} seed={newSeed} runNumber={runNumber} />;
-  return <RunView game={game} dispatch={dispatch} panel={panel} setPanel={setPanel} inspected={inspected} setInspected={setInspected} runNumber={runNumber} restart={() => { setRunNumber(v => v + 1); setRestartKey(v => v + 1); setNewSeed(Math.floor(Math.random() * 999999)); }} />;
-}
-function FreshRun({ seed, runNumber }: { seed: number; runNumber: number }) {
-  const [game, dispatch] = useReducer(reduceGame, seed, createGame);
-  const [panel, setPanel] = useState<Panel>();
-  const [inspected, setInspected] = useState<number>();
-  const [next, setNext] = useState<{ seed: number; run: number }>();
-  if (next) return <FreshRun key={next.seed} seed={next.seed} runNumber={next.run} />;
-  return <RunView game={game} dispatch={dispatch} panel={panel} setPanel={setPanel} inspected={inspected} setInspected={setInspected} runNumber={runNumber} restart={() => setNext({ seed: Math.floor(Math.random() * 999999), run: runNumber + 1 })} />;
+  return <RunView game={game} dispatch={dispatch} panel={panel} setPanel={setPanel} inspected={inspected} setInspected={setInspected} runNumber={runNumber} restart={() => { setPanel(undefined); setRunNumber(v => v + 1); dispatch({ type: "restart", seed: Math.floor(Math.random() * 999999) }); }} />;
 }
 function RunView({ game, dispatch, panel, setPanel, inspected, setInspected, runNumber, restart }: {
   game: ReturnType<typeof createGame>; dispatch: React.Dispatch<Parameters<typeof reduceGame>[1]>;

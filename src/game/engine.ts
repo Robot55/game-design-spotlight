@@ -6,6 +6,7 @@ import { ENEMIES } from "./enemies";
 import type { CardInstance, Enemy, GameState, Point, Skill } from "./types";
 
 export type GameAction =
+  | { type: "restart"; seed: number }
   | { type: "select"; uid?: number }
   | { type: "tile"; point: Point }
   | { type: "move"; dx: number; dy: number }
@@ -269,6 +270,7 @@ function enemiesAct(s: GameState) {
   startHand(s); reveal(s); offerReward(s);
 }
 export function reduceGame(state: GameState, action: GameAction): GameState {
+  if (action.type === "restart") return createGame(action.seed);
   const s = structuredClone(state);
   if (action.type === "enemies") { if (s.phase === "enemy") enemiesAct(s); return s; }
   if (action.type === "reward") {
@@ -294,9 +296,9 @@ export function reduceGame(state: GameState, action: GameAction): GameState {
   if (action.type === "scry") {
     if (!s.pendingScry.includes(action.uid)) return state;
     const c = s.draw.find(v => v.uid === action.uid); if (!c) return state;
-    const chosen = s.pendingScry.length;
+    const insert = s.draw.findIndex(v => s.pendingScry.includes(v.uid));
     s.draw = s.draw.filter(v => v.uid !== c.uid);
-    const insert = Math.min(3 - chosen, s.draw.length); s.draw.splice(insert, 0, c);
+    s.draw.splice(Math.max(0, insert), 0, c);
     s.pendingScry = s.pendingScry.filter(uid => uid !== c.uid); return s;
   }
   if (s.phase !== "player" || s.rewards.length || s.pendingScry.length) return state;
