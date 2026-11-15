@@ -113,8 +113,8 @@ describe("Documented core rules", () => {
   it("Toughness adds exactly 6 max HP and healing", () => {
     let s = arena(); s.skillPoints = 1; s.hp = 12; s = reduceGame(s, { type: "skill", skill: "toughness" }); expect(s.maxHp).toBe(106); expect(s.hp).toBe(18);
   });
-  it("Strength adds 1 melee damage and Wisdom adds 1 spell damage", () => {
-    let s = arena(); s.skillPoints = 2; s = reduceGame(s, { type: "skill", skill: "strength" }); s = reduceGame(s, { type: "skill", skill: "wisdom" }); expect(effectiveDamage(s, "sword", enemy("slime"))).toBe(4); expect(effectiveDamage(s, "spark", enemy("slime"))).toBe(3);
+  it("Strength adds 1 melee/fire damage and Wisdom adds 1 spell damage", () => {
+    let s = arena(); s.skillPoints = 2; s = reduceGame(s, { type: "skill", skill: "strength" }); s = reduceGame(s, { type: "skill", skill: "wisdom" }); expect(effectiveDamage(s, "sword", enemy("slime"))).toBe(4); expect(effectiveDamage(s, "spark", enemy("slime"))).toBe(4);
   });
   it("chests cost 1 AP and the chosen reward joins the discard and deck", () => {
     let s = arena(); const t = s.tiles[10 * s.width + 11]; if (!t) throw Error("tile missing"); t.kind = "chest";

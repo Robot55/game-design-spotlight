@@ -61,7 +61,7 @@ export function DungeonBoard({ game, dispatch, onInspect, preview }: { game: Gam
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       for (const layer of layers) {
         if (layer.object) {
-          const t = layer.object, image = images.tiles;
+          const t = layer.object, image = images["tiles"];
           const px = ox + (t.x - left) * size, py = oy + (t.y - top) * row;
           if (px < -size || px > w || py < -size || py > h + size || !image?.complete || !image.naturalWidth) continue;
           const obscures = actors.some(a => Math.abs(a.x - t.x) < 1 && a.y < t.y && a.y >= t.y - 1);
