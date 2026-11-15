@@ -23,6 +23,12 @@ export default function GameScreen() {
   const [panel, setPanel] = useState<Panel>();
   const [inspected, setInspected] = useState<number>();
   const [runNumber, setRunNumber] = useState(1);
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const target = window as Window & { __deepdraw?: { state: () => typeof game } };
+    target.__deepdraw = { state: () => game };
+    return () => { delete target.__deepdraw; };
+  }, [game]);
   return <RunView game={game} dispatch={dispatch} panel={panel} setPanel={setPanel} inspected={inspected} setInspected={setInspected} runNumber={runNumber} restart={() => { setPanel(undefined); setRunNumber(v => v + 1); dispatch({ type: "restart", seed: Math.floor(Math.random() * 999999) }); }} />;
 }
 function RunView({ game, dispatch, panel, setPanel, inspected, setInspected, runNumber, restart }: {

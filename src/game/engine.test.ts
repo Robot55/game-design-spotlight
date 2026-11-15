@@ -15,7 +15,10 @@ function enemy(kind: EnemyKind, x = 11, y = 10): Enemy {
   return { kind, id: 900, x, y, hp: ENEMIES[kind].hp, maxHp: ENEMIES[kind].hp, burn: 0, slow: 0, root: 0, awake: true };
 }
 function give(s: GameState, id: CardId) {
-  const c = { id, uid: s.nextUid++ }; s.hand.push(c); s.deck.push(c); return c;
+  const existing = s.deck.find(c => c.id === id && !s.hand.some(v => v.uid === c.uid));
+  const c = existing ?? { id, uid: s.nextUid++ };
+  if (!existing) s.deck.push(c);
+  s.draw = s.draw.filter(v => v.uid !== c.uid); s.discard = s.discard.filter(v => v.uid !== c.uid); s.hand.push(c); return c;
 }
 function play(s: GameState, id: CardId, x = 11, y = 10) {
   const c = s.hand.find(c => c.id === id) ?? give(s, id);

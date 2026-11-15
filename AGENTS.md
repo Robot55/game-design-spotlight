@@ -34,3 +34,4 @@ use the editor.
 - Lazy-load the game behind TanStack `ClientOnly`; dungeon generation and rendering libraries must not execute during SSR.
 - Use ROT.js for seeded dungeon generation and pathfinding; preserve its RNG state around each generation to keep runs reproducible.
 - Keep prototype runs in memory without accounts or saved progress; persistence is outside the current playtest scope.
+- Expose only read-only live game state on `window.__deepdraw` in development, so browser checks observe real UI actions without mutating gameplay.
